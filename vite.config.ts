@@ -22,6 +22,7 @@ export default defineConfig(({ mode }) => ({
   },
   optimizeDeps: {
     include: ['react-konva', 'konva'],
+    force: true,
   },
   build: {
     rollupOptions: {
