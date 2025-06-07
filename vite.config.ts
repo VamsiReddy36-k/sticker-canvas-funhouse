@@ -20,10 +20,6 @@ export default defineConfig(({ mode }) => ({
       "@": path.resolve(__dirname, "./src"),
     },
   },
-  optimizeDeps: {
-    include: ['react-konva', 'konva'],
-    force: true,
-  },
   build: {
     rollupOptions: {
       external: [],

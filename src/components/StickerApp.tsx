@@ -1,3 +1,4 @@
+
 import React, { useState, useRef, useCallback } from 'react';
 import { StickerCanvas, CANVAS_WIDTH, CANVAS_HEIGHT, snapToGrid } from './StickerCanvas';
 import { StickerButton } from './StickerButton';
@@ -49,7 +50,7 @@ const stickerConfigs = [
 
 export const StickerApp: React.FC = () => {
   const [stickers, setStickers] = useState<Sticker[]>([]);
-  const stageRef = useRef<any>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
   const createImageFromEmoji = useCallback((emoji: string, size: number): Promise<HTMLImageElement> => {
     return new Promise((resolve) => {
@@ -120,9 +121,8 @@ export const StickerApp: React.FC = () => {
   }, []);
 
   const downloadCanvas = useCallback(() => {
-    if (stageRef.current) {
-      const stage = stageRef.current.getStage();
-      const dataURL = stage.toDataURL({ pixelRatio: 2 });
+    if (canvasRef.current) {
+      const dataURL = canvasRef.current.toDataURL('image/png');
       
       const link = document.createElement('a');
       link.download = `sticker-canvas-${Date.now()}.png`;
@@ -171,7 +171,7 @@ export const StickerApp: React.FC = () => {
                 stickers={stickers}
                 onUpdateSticker={updateSticker}
                 onDeleteSticker={deleteSticker}
-                ref={stageRef}
+                ref={canvasRef}
               />
             </div>
           </div>
