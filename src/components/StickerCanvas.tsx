@@ -15,25 +15,38 @@ interface StickerCanvasProps {
   stickers: Sticker[];
   onUpdateSticker: (id: string, x: number, y: number) => void;
   onDeleteSticker: (id: string) => void;
+  showGrid?: boolean;
+  gridRows?: number;
+  gridCols?: number;
 }
 
 const CANVAS_WIDTH = 600;
 const CANVAS_HEIGHT = 400;
-const GRID_SIZE = 40;
 
-const snapToGrid = (value: number): number => {
-  return Math.round(value / GRID_SIZE) * GRID_SIZE;
-};
-
-export const StickerCanvas = forwardRef<HTMLCanvasElement, StickerCanvasProps>(({
+const StickerCanvas = forwardRef<HTMLCanvasElement, StickerCanvasProps>(({
   stickers,
   onUpdateSticker,
   onDeleteSticker,
+  showGrid = true,
+  gridRows = 5,
+  gridCols = 7,
 }, ref) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const isDragging = useRef(false);
   const dragSticker = useRef<string | null>(null);
   const dragOffset = useRef({ x: 0, y: 0 });
+
+  const CELL_WIDTH = CANVAS_WIDTH / gridCols;
+  const CELL_HEIGHT = CANVAS_HEIGHT / gridRows;
+
+  const snapToGrid = useCallback((x: number, y: number) => {
+    const col = Math.round(x / CELL_WIDTH);
+    const row = Math.round(y / CELL_HEIGHT);
+    return {
+      x: Math.max(0, Math.min(col * CELL_WIDTH, CANVAS_WIDTH - CELL_WIDTH)),
+      y: Math.max(0, Math.min(row * CELL_HEIGHT, CANVAS_HEIGHT - CELL_HEIGHT))
+    };
+  }, [CELL_WIDTH, CELL_HEIGHT]);
 
   const drawCanvas = useCallback(() => {
     const canvas = canvasRef.current;
@@ -52,11 +65,37 @@ export const StickerCanvas = forwardRef<HTMLCanvasElement, StickerCanvasProps>((
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
 
+    // Draw grid if enabled
+    if (showGrid) {
+      ctx.strokeStyle = 'rgba(156, 163, 175, 0.3)';
+      ctx.lineWidth = 1;
+      
+      // Vertical lines
+      for (let i = 1; i < gridCols; i++) {
+        const x = i * CELL_WIDTH;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, CANVAS_HEIGHT);
+        ctx.stroke();
+      }
+      
+      // Horizontal lines
+      for (let i = 1; i < gridRows; i++) {
+        const y = i * CELL_HEIGHT;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(CANVAS_WIDTH, y);
+        ctx.stroke();
+      }
+    }
+
     // Draw stickers
     stickers.forEach((sticker) => {
-      ctx.drawImage(sticker.image, sticker.x, sticker.y, sticker.width, sticker.height);
+      const centerX = sticker.x + (CELL_WIDTH - sticker.width) / 2;
+      const centerY = sticker.y + (CELL_HEIGHT - sticker.height) / 2;
+      ctx.drawImage(sticker.image, centerX, centerY, sticker.width, sticker.height);
     });
-  }, [stickers]);
+  }, [stickers, showGrid, gridRows, gridCols, CELL_WIDTH, CELL_HEIGHT]);
 
   useEffect(() => {
     drawCanvas();
@@ -77,11 +116,14 @@ export const StickerCanvas = forwardRef<HTMLCanvasElement, StickerCanvasProps>((
     // Check stickers in reverse order (last drawn = on top)
     for (let i = stickers.length - 1; i >= 0; i--) {
       const sticker = stickers[i];
+      const centerX = sticker.x + (CELL_WIDTH - sticker.width) / 2;
+      const centerY = sticker.y + (CELL_HEIGHT - sticker.height) / 2;
+      
       if (
-        x >= sticker.x &&
-        x <= sticker.x + sticker.width &&
-        y >= sticker.y &&
-        y <= sticker.y + sticker.height
+        x >= centerX &&
+        x <= centerX + sticker.width &&
+        y >= centerY &&
+        y <= centerY + sticker.height
       ) {
         return sticker;
       }
@@ -125,9 +167,8 @@ export const StickerCanvas = forwardRef<HTMLCanvasElement, StickerCanvasProps>((
       // Snap to grid on mouse up
       const sticker = stickers.find(s => s.id === dragSticker.current);
       if (sticker) {
-        const snappedX = snapToGrid(sticker.x);
-        const snappedY = snapToGrid(sticker.y);
-        onUpdateSticker(dragSticker.current, snappedX, snappedY);
+        const snapped = snapToGrid(sticker.x, sticker.y);
+        onUpdateSticker(dragSticker.current, snapped.x, snapped.y);
       }
     }
     
@@ -169,4 +210,4 @@ export const StickerCanvas = forwardRef<HTMLCanvasElement, StickerCanvasProps>((
 
 StickerCanvas.displayName = 'StickerCanvas';
 
-export { CANVAS_WIDTH, CANVAS_HEIGHT, snapToGrid };
+export { StickerCanvas, CANVAS_WIDTH, CANVAS_HEIGHT };

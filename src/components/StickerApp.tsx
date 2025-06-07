@@ -1,8 +1,8 @@
-
 import React, { useState, useRef, useCallback } from 'react';
-import { StickerCanvas, CANVAS_WIDTH, CANVAS_HEIGHT, snapToGrid } from './StickerCanvas';
+import { StickerCanvas, CANVAS_WIDTH, CANVAS_HEIGHT } from './StickerCanvas';
 import { StickerButton } from './StickerButton';
 import { DownloadButton } from './DownloadButton';
+import { GridControls } from './GridControls';
 import { toast } from 'sonner';
 
 interface Sticker {
@@ -50,7 +50,37 @@ const stickerConfigs = [
 
 export const StickerApp: React.FC = () => {
   const [stickers, setStickers] = useState<Sticker[]>([]);
+  const [gridRows, setGridRows] = useState(5);
+  const [gridCols, setGridCols] = useState(7);
+  const [showGrid, setShowGrid] = useState(true);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const CELL_WIDTH = CANVAS_WIDTH / gridCols;
+  const CELL_HEIGHT = CANVAS_HEIGHT / gridRows;
+
+  const findNextAvailableSlot = useCallback(() => {
+    const occupiedSlots = new Set(
+      stickers.map(sticker => `${Math.round(sticker.x / CELL_WIDTH)}-${Math.round(sticker.y / CELL_HEIGHT)}`)
+    );
+
+    for (let row = 0; row < gridRows; row++) {
+      for (let col = 0; col < gridCols; col++) {
+        const slotKey = `${col}-${row}`;
+        if (!occupiedSlots.has(slotKey)) {
+          return {
+            x: col * CELL_WIDTH,
+            y: row * CELL_HEIGHT
+          };
+        }
+      }
+    }
+
+    // If all slots are taken, place at center
+    return {
+      x: Math.floor(gridCols / 2) * CELL_WIDTH,
+      y: Math.floor(gridRows / 2) * CELL_HEIGHT
+    };
+  }, [stickers, gridRows, gridCols, CELL_WIDTH, CELL_HEIGHT]);
 
   const createImageFromEmoji = useCallback((emoji: string, size: number): Promise<HTMLImageElement> => {
     return new Promise((resolve) => {
@@ -82,14 +112,13 @@ export const StickerApp: React.FC = () => {
       const image = await createImageFromEmoji(emoji, size);
       const id = `sticker_${Date.now()}_${Math.random()}`;
       
-      // Start position in center, then snap to grid
-      const startX = snapToGrid(CANVAS_WIDTH / 2 - size / 2);
-      const startY = snapToGrid(CANVAS_HEIGHT / 2 - size / 2);
+      // Find next available grid slot
+      const position = findNextAvailableSlot();
       
       const newSticker: Sticker = {
         id,
-        x: startX,
-        y: startY,
+        x: position.x,
+        y: position.y,
         image,
         width: size,
         height: size,
@@ -104,17 +133,17 @@ export const StickerApp: React.FC = () => {
       console.error('Error adding sticker:', error);
       toast.error('Failed to add sticker');
     }
-  }, [createImageFromEmoji]);
+  }, [createImageFromEmoji, findNextAvailableSlot]);
 
   const updateSticker = useCallback((id: string, x: number, y: number) => {
     setStickers(prev => 
       prev.map(sticker => 
         sticker.id === id 
-          ? { ...sticker, x: Math.max(0, Math.min(x, CANVAS_WIDTH - sticker.width)), y: Math.max(0, Math.min(y, CANVAS_HEIGHT - sticker.height)) }
+          ? { ...sticker, x: Math.max(0, Math.min(x, CANVAS_WIDTH - CELL_WIDTH)), y: Math.max(0, Math.min(y, CANVAS_HEIGHT - CELL_HEIGHT)) }
           : sticker
       )
     );
-  }, []);
+  }, [CELL_WIDTH, CELL_HEIGHT]);
 
   const deleteSticker = useCallback((id: string) => {
     setStickers(prev => prev.filter(sticker => sticker.id !== id));
@@ -141,27 +170,40 @@ export const StickerApp: React.FC = () => {
             Sticker Canvas Studio
           </h1>
           <p className="text-muted-foreground text-lg">
-            Create, drag, and design with fun stickers! Double-click to delete.
+            Create, drag, and design with fun stickers! Auto-organizes in rows and columns.
           </p>
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-border">
           <div className="flex flex-col xl:flex-row gap-6 items-start">
-            {/* Sticker Buttons Grid */}
-            <div className="order-2 xl:order-1 w-full xl:w-auto">
-              <div className="text-sm font-medium text-muted-foreground mb-4 text-center xl:text-left">
-                Choose Stickers
-              </div>
-              <div className="grid grid-cols-6 sm:grid-cols-8 xl:grid-cols-4 gap-3 max-w-md xl:max-w-xs">
-                {stickerConfigs.map((config, index) => (
-                  <StickerButton
-                    key={config.emoji}
-                    emoji={config.emoji}
-                    label={config.label}
-                    onClick={() => addSticker(config.emoji, config.label, config.size)}
-                    className={`delay-${(index % 6) * 100}`}
-                  />
-                ))}
+            {/* Left Sidebar */}
+            <div className="order-2 xl:order-1 w-full xl:w-auto space-y-6">
+              {/* Grid Controls */}
+              <GridControls
+                gridRows={gridRows}
+                gridCols={gridCols}
+                showGrid={showGrid}
+                onGridRowsChange={setGridRows}
+                onGridColsChange={setGridCols}
+                onToggleGrid={() => setShowGrid(!showGrid)}
+              />
+
+              {/* Sticker Buttons */}
+              <div>
+                <div className="text-sm font-medium text-muted-foreground mb-4 text-center xl:text-left">
+                  Choose Stickers
+                </div>
+                <div className="grid grid-cols-6 sm:grid-cols-8 xl:grid-cols-4 gap-3 max-w-md xl:max-w-xs">
+                  {stickerConfigs.map((config, index) => (
+                    <StickerButton
+                      key={config.emoji}
+                      emoji={config.emoji}
+                      label={config.label}
+                      onClick={() => addSticker(config.emoji, config.label, config.size)}
+                      className={`delay-${(index % 6) * 100}`}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -171,6 +213,9 @@ export const StickerApp: React.FC = () => {
                 stickers={stickers}
                 onUpdateSticker={updateSticker}
                 onDeleteSticker={deleteSticker}
+                showGrid={showGrid}
+                gridRows={gridRows}
+                gridCols={gridCols}
                 ref={canvasRef}
               />
             </div>
@@ -188,7 +233,8 @@ export const StickerApp: React.FC = () => {
                 <span>🖱️ Click stickers to add them</span>
                 <span>🫳 Drag to move around</span>
                 <span>🗑️ Double-click to delete</span>
-                <span>📏 Auto-snaps to 40px grid</span>
+                <span>📐 Auto-snaps to grid</span>
+                <span>⚙️ Customize grid layout</span>
               </div>
             </div>
           </div>
