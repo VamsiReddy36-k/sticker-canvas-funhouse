@@ -1,5 +1,5 @@
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, forwardRef } from 'react';
 import { Stage, Layer, Image as KonvaImage } from 'react-konva';
 import { toast } from 'sonner';
 
@@ -26,13 +26,11 @@ const snapToGrid = (value: number): number => {
   return Math.round(value / GRID_SIZE) * GRID_SIZE;
 };
 
-export const StickerCanvas: React.FC<StickerCanvasProps> = ({
+export const StickerCanvas = forwardRef<any, StickerCanvasProps>(({
   stickers,
   onUpdateSticker,
   onDeleteSticker,
-}) => {
-  const stageRef = useRef<any>(null);
-
+}, ref) => {
   const handleDragEnd = (id: string, x: number, y: number) => {
     const snappedX = snapToGrid(x);
     const snappedY = snapToGrid(y);
@@ -51,7 +49,7 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
       <Stage
         width={CANVAS_WIDTH}
         height={CANVAS_HEIGHT}
-        ref={stageRef}
+        ref={ref}
         className="bg-gradient-to-br from-blue-50 to-purple-50"
       >
         <Layer>
@@ -96,6 +94,8 @@ export const StickerCanvas: React.FC<StickerCanvasProps> = ({
       </Stage>
     </div>
   );
-};
+});
+
+StickerCanvas.displayName = 'StickerCanvas';
 
 export { CANVAS_WIDTH, CANVAS_HEIGHT, snapToGrid };
