@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useCallback } from 'react';
 import { StickerCanvas, CANVAS_WIDTH, CANVAS_HEIGHT, snapToGrid } from './StickerCanvas';
 import { StickerButton } from './StickerButton';
@@ -15,9 +14,37 @@ interface Sticker {
 }
 
 const stickerConfigs = [
+  // Animals
   { emoji: '🐱', label: 'Cat', size: 60 },
-  { emoji: '🍎', label: 'Apple', size: 50 },
+  { emoji: '🐶', label: 'Dog', size: 60 },
   { emoji: '🐧', label: 'Penguin', size: 55 },
+  { emoji: '🦊', label: 'Fox', size: 55 },
+  { emoji: '🐸', label: 'Frog', size: 55 },
+  { emoji: '🦋', label: 'Butterfly', size: 50 },
+  
+  // Food
+  { emoji: '🍎', label: 'Apple', size: 50 },
+  { emoji: '🍕', label: 'Pizza', size: 55 },
+  { emoji: '🍔', label: 'Burger', size: 55 },
+  { emoji: '🍰', label: 'Cake', size: 55 },
+  { emoji: '🍓', label: 'Strawberry', size: 50 },
+  { emoji: '🥑', label: 'Avocado', size: 50 },
+  
+  // Nature
+  { emoji: '🌸', label: 'Cherry Blossom', size: 55 },
+  { emoji: '🌟', label: 'Star', size: 50 },
+  { emoji: '🌙', label: 'Moon', size: 50 },
+  { emoji: '☀️', label: 'Sun', size: 55 },
+  { emoji: '🌈', label: 'Rainbow', size: 60 },
+  { emoji: '⚡', label: 'Lightning', size: 50 },
+  
+  // Objects
+  { emoji: '🎈', label: 'Balloon', size: 55 },
+  { emoji: '🎁', label: 'Gift', size: 55 },
+  { emoji: '🎵', label: 'Music Note', size: 50 },
+  { emoji: '⚽', label: 'Soccer Ball', size: 50 },
+  { emoji: '🚀', label: 'Rocket', size: 55 },
+  { emoji: '💎', label: 'Diamond', size: 50 },
 ];
 
 export const StickerApp: React.FC = () => {
@@ -108,7 +135,7 @@ export const StickerApp: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-foreground mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
             Sticker Canvas Studio
@@ -119,25 +146,27 @@ export const StickerApp: React.FC = () => {
         </div>
 
         <div className="bg-white rounded-2xl shadow-xl p-6 border border-border">
-          <div className="flex flex-col lg:flex-row gap-6 items-start">
-            {/* Sticker Buttons */}
-            <div className="flex lg:flex-col gap-4 order-2 lg:order-1">
-              <div className="text-sm font-medium text-muted-foreground mb-2 hidden lg:block">
-                Stickers
+          <div className="flex flex-col xl:flex-row gap-6 items-start">
+            {/* Sticker Buttons Grid */}
+            <div className="order-2 xl:order-1 w-full xl:w-auto">
+              <div className="text-sm font-medium text-muted-foreground mb-4 text-center xl:text-left">
+                Choose Stickers
               </div>
-              {stickerConfigs.map((config, index) => (
-                <StickerButton
-                  key={config.emoji}
-                  emoji={config.emoji}
-                  label={config.label}
-                  onClick={() => addSticker(config.emoji, config.label, config.size)}
-                  className={`delay-${index * 100}`}
-                />
-              ))}
+              <div className="grid grid-cols-6 sm:grid-cols-8 xl:grid-cols-4 gap-3 max-w-md xl:max-w-xs">
+                {stickerConfigs.map((config, index) => (
+                  <StickerButton
+                    key={config.emoji}
+                    emoji={config.emoji}
+                    label={config.label}
+                    onClick={() => addSticker(config.emoji, config.label, config.size)}
+                    className={`delay-${(index % 6) * 100}`}
+                  />
+                ))}
+              </div>
             </div>
 
             {/* Canvas */}
-            <div className="flex-1 order-1 lg:order-2">
+            <div className="flex-1 order-1 xl:order-2">
               <StickerCanvas
                 stickers={stickers}
                 onUpdateSticker={updateSticker}
